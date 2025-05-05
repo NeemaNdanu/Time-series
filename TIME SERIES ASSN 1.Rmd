@@ -1,0 +1,117 @@
+---
+title: "TIME SERIES ASS 1"
+author: "NEEMA NDANU"
+date: "2024-05-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## QUESTION
+
+### The annual expenditure levels (in millions) to promote products and services for the financial services sector such as banks, insurance, investments, etc. from 2015 to 2022 are shown in the following table:Use exponential smoothing to obtain filtered values by taking α = 0.5, α = 0.7, α = 0.9 and calculate the forecast errors. Also, plot the original and smoothed values
+
+```{r cars}
+# Load the required packages
+#install.packages("fpp2")
+#Install.packages("tidyverse")
+#install.packages("readxl")
+#install.packages("forecast")
+library(fpp2)
+library(tidyverse)
+library(readxl)
+library(forecast)
+library(ggplot2)
+```
+
+
+```{r}
+# Data for annual expenditure
+year <- 2015:2022
+exp <- c(5.5, 7.2, 8.0, 9.6, 10.2, 11.0, 12.5, 14.0)
+expenditure <- data.frame(year, exp)
+expenditure
+
+# Convert the data into a time series object
+expenditure.ts <- ts(expenditure$exp, frequency = 1, start = c(2015, 1))
+
+
+# Plot the expenditure time series
+plot(expenditure.ts, main = "Expenditure Time Series", xlab = "Year", ylab = "Expenditure (in millions)")
+
+
+```
+
+### EXPLANATION
+
+From the above graph, we can conclude that the rising line suggests that expenditures have consistently increased during this period (2015-2022), which could be a result of inflation, growth, or other factors affecting costs.
+
+```{r}
+# Apply simple exponential smoothing (SES) for alpha = 0.5, 0.7, 0.9
+exp_forecast_0.5 <- ses(expenditure.ts, alpha = 0.5)
+exp_forecast_0.7 <- ses(expenditure.ts, alpha = 0.7)
+exp_forecast_0.9 <- ses(expenditure.ts, alpha = 0.9)
+
+# Print the forecast
+print(exp_forecast_0.5)
+print(exp_forecast_0.7)
+print(exp_forecast_0.9)
+
+#Plot of each alpha values
+plot(exp_forecast_0.5,main="Forecast from SES when  α = 0.5 ")
+plot(exp_forecast_0.7,main="Forecast from SES when  α = 0.7 ")
+plot(exp_forecast_0.9,main="Forecast from SES when  α = 0.9 ")
+
+# Calculate forecast errors
+calculate_forecast_error <- function(model, actual) {
+  accuracy(fitted(model), actual)
+}
+
+# Forecast errors for each alpha
+error_0.5 <- calculate_forecast_error(exp_forecast_0.5, expenditure$exp)
+error_0.7 <- calculate_forecast_error(exp_forecast_0.7, expenditure$exp)
+error_0.9 <- calculate_forecast_error(exp_forecast_0.9, expenditure$exp)
+
+
+# Print forecast errors
+print(error_0.5)
+print(error_0.7)
+print(error_0.9)
+
+# Plot the comparison between the original values and all the alphas
+autoplot(expenditure.ts, series = "Original") +
+  autolayer(fitted(exp_forecast_0.5), series = "Alpha 0.5") +
+  autolayer(fitted(exp_forecast_0.7), series = "Alpha 0.7") +
+  autolayer(fitted(exp_forecast_0.9), series = "Alpha 0.9") +
+  ggtitle("Expenditure Time Series with Simple Exponential Smoothing") +
+  xlab("Year") + ylab("Expenditure (in millions)") +
+  scale_color_manual(values = c("Original" = "black", "Alpha 0.5" = "blue", "Alpha 0.7" = "red", "Alpha 0.9" = "green")) +
+  theme_minimal() + labs(color = "Series") +
+  theme(legend.title = element_blank())
+
+```
+
+### EXPLANATION
+
+The Simple Exponential Smoothing (SES) technique is used for data without trends or seasonal patterns. It’s the simplest exponential smoothing method and provides forecasts with prediction intervals to show uncertainty.
+
+- Point Forecast: Represents the predicted expenditure value for each year based on the SES model. For example, in 2023 with α = 0.5, the forecasted expenditure is about $12.67 million.
+
+- Prediction Intervals: Provide ranges where the actual expenditure is likely to fall.
+  - Lo 80 and Hi 80: Represent the lower and upper bounds of the 80% confidence interval, indicating the range within which we expect the actual expenditure to fall with 80% confidence. For 2023 with α = 0.5, this range is approximately 9.90 million to 15.43 million.
+  - Lo 95 and Hi 95: Represent the lower and upper bounds of the 95% confidence interval, indicating the range within which we expect the actual expenditure to fall with 95% confidence. For 2023 with α = 0.5, this range is approximately 8.43 million to 16.90 million.
+
+- Forecast Error Metrics: Include measures of forecast accuracy, such as Mean Error (ME), Root Mean Squared Error (RMSE), Mean Absolute Error (MAE), Mean Percentage Error (MPE), Mean Absolute Percentage Error (MAPE), and Autocorrelation Function (ACF1). Lower values indicate better performance. For example, in the test set, the RMSE for α = 0.5 is about $1.87 million, and the MAPE for α = 0.5 is around 18.55%.
+
+- Graphs: The three graphs (Forecast from SES with α = 0.5, 0.7, and 0.9) display the point forecasts along with the Lo 80, Hi 80, Lo 95, and Hi 95 values. The rising line from 2015 to 2020 indicates an increasing trend. After 2020, a shaded area around the line represents the prediction intervals, with the width of the shaded area indicating the level of uncertainty or the levels of confidence. The shaded area grows wider as it approaches 2030, showing increasing uncertainty in the forecasted values.
+
+For the "Expenditure Time Series with Simple Exponential Smoothing," the choice of alpha (α) impacts the balance between responsiveness to recent data and stability:
+
+- α = 0.5: Moderate smoothing.
+- α = 0.7: More aggressive smoothing.
+- α = 0.9: Most aggressive smoothing.
+
+Higher alpha values make the model more responsive to recent changes, while lower values provide more stability.
+

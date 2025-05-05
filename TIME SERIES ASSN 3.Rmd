@@ -1,0 +1,141 @@
+---
+title: "DESEASONALIZED"
+author: "NEEMA NDANU"
+date: "2024-06-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## QUESTION 
+### A manager of a national park collected data on the number of visitors (in thousands) who visited the park in each quarter of 2021 and 2022. The data includes:
+Season Seasonal Index 2021 2022
+Summer 162 51 54
+Monsoon 62 28 32
+Winter 87 41 45
+Spring 89 36 43
+
+### Tasks:1. Calculate the deseasonalized values for each quarter
+```{r}
+# Load the required libraries
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+
+# Define the season
+season_name <- c("Summer", "Monsoon", "Winter", "Spring")
+
+# Define the season matrix
+season_values <- matrix(c(51, 28, 41, 36, 54, 32, 45, 43), nrow = 4, ncol = 2, byrow = FALSE)
+
+# Define the years
+years <- c(2021, 2022)
+
+# Define the seasonal index
+seasonal_index <- c(162, 62, 87, 89)
+
+# Assign column names to the season matrix
+colnames(season_values) <- years
+
+# Calculate the deseasonalized values
+deseasonalized <- season_values / seasonal_index * 100
+
+# Combine the years, season_name into a data frame
+data <- data.frame(
+  year = rep(years, each = length(season_name)),
+  season_name = rep(season_name, times = length(years)),
+  number_of_visit = as.vector(season_values),
+  seasonal_index = rep(seasonal_index, times = length(years)),
+  deseasonalized = as.vector(deseasonalized)
+)
+
+# Print the data frame
+print(data)
+```
+### EXPLANATION
+The deseasonalized values after the values without the seasonal effect.This helps in understanding the trend without the seasonal fluctuations.
+
+### Compute the trend values for the deseasonalized data
+```{r}
+# Total number of observations
+t <- nrow(data)
+
+# Calculate the value of x for each observation
+xt <- 2 * (1:t - 4.5)
+
+# Sum of (xt * yt) and sum of x^2
+yt <- data$deseasonalized
+xtyt <- xt * yt
+x_2 <- xt^2
+
+# Calculate the B_0 and B_1 coefficients
+B_1 <- sum(xtyt) / sum(x_2)
+B_0 <- sum(yt) / t
+
+# Print the results
+print(B_1)
+print(B_0)
+
+# Find the trend values
+Yt <- B_0 + B_1 * xt
+
+# Create a data frame with the new values:
+data_1 <- data.frame(
+  year = rep(years, each = length(season_name)),
+  season_name = rep(season_name, times = length(years)),
+  number_of_visit = as.vector(season_values),
+  seasonal_index = rep(seasonal_index, times = length(years)),
+  deseasonalized = as.vector(deseasonalized),
+  trend_values = Yt
+)
+print(data_1)
+
+# Create the cyclic effect
+data_2 <- data_1 %>%
+  mutate(cyclic_effect = (deseasonalized / trend_values) * 100)
+data_2
+```
+### EXPLANATION
+The above trend values helps us to know the trend of the number of visits over time.
+
+### Plot the quarterly number of visitors for 2021 and 2022, along with the deseasonalized values and trend values on the same graph
+```{r}
+# Create a time series object for adjusted index values
+number_of_visit_ts <- ts(data_2$number_of_visit, start = c(2021, 1), frequency = 4)
+deseasonalized_ts <- ts(data_2$deseasonalized, start = c(2021, 1), frequency = 4)
+trend_values_ts <- ts(data_2$trend_values, start = c(2021, 1), frequency = 4)
+cyclic_effect_ts <- ts(data_2$cyclic_effect, start = c(2021, 1), frequency = 4)
+
+# Print the results
+print(number_of_visit_ts)
+print(deseasonalized_ts)
+print(trend_values_ts)
+print(cyclic_effect_ts)
+
+# Create a new column combining year and season for plotting
+data_2$season_year <- paste(data_2$year, data_2$season_name, sep = " ")
+
+# Plot the data
+library(ggplot2)
+plot1 <- ggplot(data_2, aes(x = season_year, group = 1)) +
+  geom_line(aes(y = number_of_visit, color = "Number of Visit")) +
+  geom_line(aes(y = deseasonalized, color = "Deseasonalized")) +
+  geom_line(aes(y = cyclic_effect, color = "Cyclic Effect")) +
+  labs(title = "Seasonal Data Analysis", x = "Season (Year)", y = "Number of Visits") +
+  scale_color_manual(values = c("Number of Visit" = "blue", "Deseasonalized" = "green", "Cyclic Effect" = "purple")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(limits = unique(data_2$season_year))
+
+print(plot1)
+
+```
+### EXPLANATION
+From the above graph, we can conclude the following:
+
+1. The blue line indicates the number of visits with seasonal effects, showing peaks and troughs due to seasonal variations.
+2. The green line indicates the number of visits after removing seasonal effects (deseasonalized data), such as changes due to summer, spring, monsoon, and winter.
+3. The red line indicates the trend values of the deseasonalized data, showing an overall increasing trend in the number of visits over the years 2021 and 2022.
+4. Comparing the three lines (number of visits, deseasonalized data, and trend), we can analyze how seasonality affects the overall number of visits. Even after removing the seasonality effects, the deseasonalized data still exhibits some peaks and troughs at specific times, such as peaks during the 2021 monsoon and winter, and similar peaks during the 2022 monsoon and winter.

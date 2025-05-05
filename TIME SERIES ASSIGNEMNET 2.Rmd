@@ -1,0 +1,429 @@
+---
+title: "TIME SERIES ASSIGN 2"
+author: "NEEMA NDANU"
+date: "2024-05-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## QUESTION 1
+### The following table gives the gross domestic products (GDP) In 100 million for a certain country 2010 to 2020. a)Fit a trend line for GDP data and find trend values with the help of trendline
+
+```{r cars}
+# Load the ggplot2 package
+library(ggplot2)
+
+# Define the data
+year <- 2011:2020
+GDP_Yt <- c(35, 37, 51, 54, 62, 64, 74, 71, 83, 80)
+
+# Total of GDP_Yt
+total_Yt <- sum(GDP_Yt)
+
+# Number of observations
+n <- length(year)
+
+# Calculate the mean year to center the data around zero
+mean_year <- mean(year)
+
+# Find the values of Xt
+Xt <- year - mean_year
+
+# Find the values of XtYt
+XtYt <- Xt * GDP_Yt
+total_XtYt <- sum(XtYt)
+
+# Find the values of X^2t
+X_2t <- Xt^2
+total_X_2t <- sum(X_2t)
+
+# Calculate beta_1 (slope) and beta_0 (intercept)
+B_1 <- total_XtYt / total_X_2t
+B_0 <- mean(GDP_Yt)
+
+# Generate trend values (Y_hat)
+Y_hat_1 <- B_0 + B_1 * Xt
+
+# Create a data frame for the values
+data <- data.frame(year, GDP_Yt, Xt, XtYt, X_2t, Y_hat_1)
+
+# Print the final data frame
+print(data)
+
+# Plot the original GDP values and the trend line with legend
+ggplot(data, aes(x = year)) +
+  geom_point(aes(y = GDP_Yt, color = "Original GDP"), size = 3) +
+  geom_line(aes(y = GDP_Yt, color = "Original GDP")) +
+  geom_line(aes(y = Y_hat_1, color = "Trend Line"), linetype = "dashed") +
+  scale_color_manual(values = c("Original GDP" = "blue", "Trend Line" = "red")) +
+  labs(title = "GDP and Trend Line from 2011 to 2020",
+       x = "Year",
+       y = "GDP (in 100 million)",
+       color = "Legend") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2011, 2020, 1), limits = c(2011, 2020))
+
+
+
+
+```
+### EXPLANATION
+
+The trend line visually represents the overall direction of change in GDP over the given period.From the above graph we can conclude that it is an upward trend.
+
+### Find the Forecast errors
+
+```{r}
+# Find the errors:
+errors<-GDP_Yt-Y_hat_1
+
+# Add the errors to the data frame
+data <- data.frame(year, GDP_Yt, Y_hat_1, errors)
+data
+```
+### EXPLANATION
+
+The sign before the errors usually indicates a different meaning that is,positive error values indicate that the predicted GDP was lower than the actual GDP whereas negative error values indicate that the predicted GDP was higher than the actual GDP.The magnitude of the errors provides insights into how well the trend line fits the data. Smaller errors suggest a better fit.
+
+### Use the best fit trend line model to predict the country's GDP for 2022
+
+```{r}
+# Define the year for prediction
+year_pred <- 2022
+
+# Calculate the mean year to center the data around zero
+mean_year <- mean(year)
+mean_year
+
+# Calculate the Xt for the prediction year
+Xt_pred <- year_pred - mean_year
+
+# Generate the predicted GDP for 2022 using the trend line model
+GDP_pred_2022 <- B_0 + B_1 * Xt_pred
+
+# Print the predicted GDP for 2022
+cat("The predicted value for the country's GDP for 2022 is:", GDP_pred_2022)
+
+```
+### EXPLANATION
+
+The predicted value for the country's GDP for 2022 is approximately 96. This means we expect the GDP to keep on increasing as the years go on as from 2020.
+
+### Use a quadratic trend line
+
+```{r}
+# Calculate the values of the x^2tyt
+x_2t_yt<-((Xt)^2)*GDP_Yt
+total_x_2t_yt<-sum(x_2t_yt)
+
+# Calculate the values of (xt)^3
+X_3t<-(Xt)^3
+total_X_3t<-sum(X_3t)
+
+# Calculate the values of(xt)^4
+X_4t<-(Xt)^4
+total_X_4t<-sum(X_4t)
+
+#Use the following to find the values of beta_0, beta_1 and beta_2
+#sum_y_hat<-n * B_0 + B_1 * Xt + B_2 * X_2t
+#sum_Xt_Yt<- B_0 * sum(Xt) + B_1 * sum(X_2t) + B_2 * sum(X_3t)
+#sum_x_2t_yt<-B_0 * sum(X_2t) + B_1 * sum(X_3t) + B_2 * sum(X_4t)
+
+# Create the normal equation matrix and vector
+A <- matrix(c(
+  n, sum(Xt), sum(X_2t),
+  sum(Xt), sum(X_2t), sum(X_3t),
+  sum(X_2t), sum(X_3t), sum(X_4t)
+), nrow = 3, byrow = TRUE)
+A
+
+b <- c(total_Yt, total_XtYt, total_x_2t_yt)
+
+# Solve for the coefficients
+coefficients <- solve(A, b)
+
+# Extract coefficients
+B_0_2 <- coefficients[1]
+B_1_2 <- coefficients[2]
+B_2_2 <- coefficients[3]
+
+# Generate trend values (Y_hat)
+Y_hat_2 <- B_0_2 + B_1_2 * Xt + B_2_2 * X_2t 
+
+# Create a data frame for the values
+data <- data.frame(year, GDP_Yt, Xt, XtYt, X_2t,x_2t_yt,X_3t,X_4t,Y_hat_2 )
+data
+
+# Plot the original GDP values and the quadratic trend line with legend
+ggplot(data, aes(x = year)) +
+  geom_point(aes(y = GDP_Yt, color = "Original GDP"), size = 3) +
+  geom_line(aes(y = GDP_Yt, color = "Original GDP")) +
+  geom_line(aes(y = Y_hat_2, color = "Quadratic Trend Line"), linetype = "dashed") +
+  scale_color_manual(values = c("Original GDP" = "blue", "Quadratic Trend Line" = "red")) +
+  labs(title = "GDP and Quadratic Trend Line from 2011 to 2020",
+       x = "Year",
+       y = "GDP (in 100 million)",
+       color = "Legend") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2011, 2020, 1), limits = c(2011, 2020))
+```
+### EXPLANATION
+A quadratic trend considers a parabolic shape to better fit the fluctuations in the data.The quadratic trend line captures the curvature in the GDP data, which may not be adequately modeled by a linear trend.The plot shows how the quadratic trend line fits the data points, emphasizing the parabolic shape.
+
+### Forecast errors when using the quadratic trend line
+
+```{r}
+# Calculate the forecast errors:
+errors_1<-GDP_Yt-Y_hat_2
+errors_1
+
+# Add the errors to the original data
+data <- data.frame(year, GDP_Yt, Y_hat_2, errors_1)
+data
+```
+### EXPLANATION
+
+The sign before the errors usually indicates a different meaning that is,positive error values indicate that the predicted GDP was lower than the actual GDP whereas negative error values indicate that the predicted GDP was higher than the actual GDP.The magnitude of the errors provides insights into how well the trend line fits the data. Smaller errors suggest a better fit.
+
+### Use the quadratic equation for the 2022
+
+```{r}
+# Define the year for prediction
+year_pred <- 2022
+
+# Calculate the mean year to center the data around zero
+mean_year <- mean(year)
+mean_year
+
+# Calculate the Xt for the prediction year
+Xt_pred <- year_pred - mean_year
+
+# Calculate the X_2t prediction
+X_2t_pred <-(year_pred - mean_year)^2
+
+# Generate the predicted GDP for 2022 using the trend line model
+GDP_pred_2022 <- B_0_2 + B_1_2 * Xt_pred + B_2_2 * X_2t_pred 
+
+# Print the predicted GDP for 2022
+cat("The predicted value for the country's GDP for 2022 is:", GDP_pred_2022)
+
+```
+### EXPLANATION
+We can say then the country's GDP for 2022 is approximately is 86.This means as the as the years keep on increasing, the GDP of the country will also increase.
+
+### Use the exponential trend line
+
+```{r}
+library(ggplot2)
+
+# Define the data
+year <- c(2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020)
+GDP_Yt <- c(35, 37, 51, 54, 62, 64, 74, 71, 83, 80)
+
+# Calculate Xt and Zt
+mean_year <- mean(year)
+Xt <- year - mean_year
+Zt <- log(GDP_Yt)
+
+# Calculate B_0 and B_1
+n <- length(year)
+a <- sum(Zt) / n
+B_0 <- exp(a)
+X_2t <- Xt^2
+B_1 <- sum(Xt * Zt) / sum(X_2t)
+
+# Calculate yt
+yt <- B_0 * exp(B_1 * Xt)
+
+# Create dataframe
+df <- data.frame(year, GDP_Yt, Xt, yt)
+df
+
+# Plot the original GDP values and the exponential trend line with legend
+ggplot(df, aes(x = year)) +
+  geom_point(aes(y = GDP_Yt, color = "Original GDP"), size = 3) +
+  geom_line(aes(y = GDP_Yt, color = "Original GDP")) +
+  geom_line(aes(y = yt, color = "Exponential Trend Line"), linetype = "dashed") +
+  scale_color_manual(values = c("Original GDP" = "green", "Exponential Trend Line" = "maroon")) +
+  labs(title = "GDP and Exponential Trend Line from 2011 to 2020",
+       x = "Year",
+       y = "GDP (in 100 million)",
+       color = "Legend") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2011, 2020, 1), limits = c(2011, 2020))
+
+
+```
+### EXPLANATION
+
+Exponential trends are commonly used when data exhibits exponential growth or decay.The exponential trend line captures the growth or decay pattern in the GDP data.The plot shows how well the exponential model fits the actual GDP values (green points) using a maroon dashed line.
+
+### Use the exponential equation for the 2022
+
+```{r}
+# Define the year for prediction
+year_pred <- 2022
+
+# Calculate the mean year to center the data around zero
+mean_year <- mean(year)
+mean_year
+
+# Calculate the Xt for the prediction year
+Xt_pred <- year_pred - mean_year
+
+# Generate the predicted GDP for 2022 using the trend line model
+GDP_pred_2022 <- B_0 * exp(B_1 * Xt_pred)
+
+# Print the predicted GDP for 2022
+cat("The predicted value for the country's GDP for 2022 is:", GDP_pred_2022)
+
+```
+### EXPLANTION
+We can say then the county's GDP for 2022 is approximately is 109.This means as the as the years keep on increasing, the GDP of the country will also increase.
+
+### Forecast errors when using the exponentail trend line
+
+```{r}
+# Calculate the forecast errors:
+errors_1<-GDP_Yt-yt
+errors_1
+
+# Add the errors to the original data
+data <- data.frame(year, GDP_Yt, yt, errors_1)
+data
+
+```
+### EXPLANATION
+
+The sign before the errors usually indicates a different meaning that is,positive error values indicate that the predicted GDP was lower than the actual GDP whereas negative error values indicate that the predicted GDP was higher than the actual GDP.The magnitude of the errors provides insights into how well the trend line fits the data. Smaller errors suggest a better fit.
+
+### Comaparison between the three trend lines:
+
+```{r}
+
+# Plot the original GDP values and the trend lines with legend
+ggplot(df, aes(x = year)) +
+  geom_point(aes(y = GDP_Yt, color = "Original GDP"), size = 3) +
+  geom_line(aes(y = GDP_Yt, color = "Original GDP")) +
+  geom_line(aes(y = yt, color = "Exponential Trend Line"), linetype = "dashed") +
+  geom_line(aes(y = Y_hat_1, color = "Linear Trend Line"), linetype = "dashed") +
+  geom_line(aes(y = Y_hat_2, color = "Quadratic Trend Line"), linetype = "dotted") +
+  scale_color_manual(values = c("Original GDP" = "green", 
+                                "Exponential Trend Line" = "maroon", 
+                                "Linear Trend Line" = "blue",
+                                "Quadratic Trend Line" = "purple")) +
+  labs(title = "GDP and Trend Lines from 2011 to 2020",
+       x = "Year",
+       y = "GDP (in 100 million)",
+       color = "Legend") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2011, 2020, 1), limits = c(2011, 2020))
+
+```
+If we compare the forecast errors that occurred in between linear,quadratic and exponential form, then we observe that these are less in quadratic as compared to the linear and exponential. Hence we say that the quadratic trend fits better than the linear and exponential on the GDP(Gross Domestic Product) of the country.
+
+## Question 2
+### The number of subscribers to a streaming service from 2014 to 2021 is given in the following table: Year 2014 2015 2016 2017 2018 2019 2020 2021 Subscribers (in millions) 2 5 11 20 35 50 70 95 i. Fit the exponential trend.
+
+```{r}
+# Load necessary library
+library(ggplot2)
+
+# Define the data
+years <- c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021)
+Subscribers <- c(2, 5, 11, 20, 35, 50, 70, 95)
+
+# Calculate Xt and XtYt
+Xt <- years - mean(years)
+XtYt <- Xt * Subscribers
+Xt_2 <- Xt^2
+
+n <- length(Subscribers)
+
+# Calculate Zt (natural logarithm of Subscribers)
+Zt <- log(Subscribers)
+Xt_Zt <- Xt * Zt
+
+# Calculate the values of a, B_0, B_1 and yt
+a <- sum(Zt) / n
+B_0 <- exp(a)
+
+B_1 <- sum(Xt_Zt) / sum(Xt_2)
+
+yt <- B_0 * exp(B_1 * Xt)
+
+# Create a dataframe
+df <- data.frame(
+  years = years, 
+  Subscribers = Subscribers, 
+  Xt = Xt,
+  XtYt = XtYt, 
+  Zt = Zt, 
+  Xt_2 = Xt_2,
+  Xt_Zt = Xt_Zt,
+  yt = yt
+)
+print(df)
+
+# Plot the original Subscribers values and the exponential trend line with legend
+ggplot(df, aes(x = years)) +
+  geom_point(aes(y = Subscribers, color = "Original Subscribers"), size = 3) +
+  geom_line(aes(y = Subscribers, color = "Original Subscribers")) +
+  geom_line(aes(y = yt, color = "Exponential Trend Line"), linetype = "dashed") +
+  scale_color_manual(values = c("Original Subscribers" = "green", "Exponential Trend Line" = "maroon")) +
+  labs(
+    title = "Subscribers and Exponential Trend Line from 2014 to 2021",
+    x = "Year",
+    y = "Number of Subscribers",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2014, 2021, 1), limits = c(2014, 2021))
+
+```
+### EXPLANATION
+
+The exponential trend line captures the growth pattern in subscriber counts.Analysts can use this information to understand subscriber behavior and predict future growth and from the graph we can say that it is a upward exponential trend menaing the number of subscribers will keep on increasing.
+
+### Forecast errors when using the exponentail trend line
+
+```{r}
+# Calculate the forecast errors:
+errors_3<-Subscribers-yt
+errors_3
+
+# Add the errors to the original data
+data <- data.frame(years, Subscribers, yt, errors_3)
+data
+
+```
+
+### EXPLANATION
+
+The sign before the errors usually indicates a different meaning that is,positive error values indicate that the number of subscribers was lower than the actual number of subscribers whereas negative error values indicate that the number of subscribers was higher than the actual number of subscribers.The magnitude of the errors provides insights into how well the trend line fits the data. Smaller errors suggest a better fit.
+
+### Prediction of the numebr of subscribers as of 2024
+
+```{r}
+# Define the year for prediction
+years_pred <- 2024
+
+# Calculate the mean year to center the data around zero
+mean_years <- mean(years)
+mean_years
+
+# Calculate the Xt for the prediction year
+Xt_pred <- years_pred - mean_years
+
+# Generate the predicted Number of subscribers for 2024 using the trend line model
+Sub_pred_2024 <- B_0 * exp(B_1 * Xt_pred)
+
+# Print the predicted GDP for 2022
+cat("The predicted value for the Number of subscribers for 2024 is:", Sub_pred_2024)
+```
+### EXPLANTION
+We can say then the Number of subscribers for 2024 is approximately is 667.This means as the as the years keep on increasing, the Number of subscribers of the the streaming service  will also increase.
+

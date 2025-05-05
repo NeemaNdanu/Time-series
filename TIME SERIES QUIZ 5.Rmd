@@ -1,0 +1,299 @@
+---
+title: "TIME SERIES QUIZ 5"
+author: "NEEMA NDANU"
+date: "2024-07-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## QUESTION 1
+You are a data analyst tasked with modeling a time series using an ARMA model. Your objective is to understand the dynamics of the series and make future forecasts.
+
+Packages: forecast and tseries
+
+### 1. Simulate a time series dataset of length 500 from an ARMA(2,1) model with AR parameters 0.5 and 0.3, and an MA parameter 0.4. Ensure you set a seed for reproducibility,
+```{r}
+# Load the necessary libraries
+library(forecast)
+library(tseries)
+
+# Set seed for reproducibility
+set.seed(111)
+
+# Simulate data
+x <- arima.sim(model = list(ar = c(0.5, 0.3), ma = 0.4), n = 500)
+
+# View a portion of data
+head(x)
+
+# Convert to time series object
+x_ts <- ts(x)
+```
+
+The above output means that data points displayed after generating the 500 time series data points is the first 6 points only, hence end = 6.  the frequency shows how th data points are equally spaced, with one observation per time unit.
+
+### 2. Plot the simulated time series data and describe any patterns or characteristics you observe
+```{r}
+# Plot the data
+plot(x_ts,main="ARMA(2,1)",ylab="Value", xlab="Time")
+
+# To determine stationaryity or not
+adf.test(x_ts)
+```
+
+The above graph exhibit stationarity properties as it doesn't exhibits any trends, seasonal or cyclic variations when you look at the graph visually.To confirm if data is stationary we used the Dickey-Fuller test (ADF test). Here the P-value is 0.01 so we have to reject the null hypothesis. So we can conclude that the series is stationary.
+
+### 3. Plot the ACF and PACF of the simulated ARMA data. Interpret the plots
+```{r}
+# Plot the ACF
+acf(x_ts,main="ACF of ARMA(2,1)")
+
+# Plot the PACF
+pacf(x_ts,main="PACF of ARMA(2,1)")
+```
+The x-axis shows lags, and the y-axis displays autocorrelation coefficients. Each vertical bar represents the autocorrelation at a specific lag. Bars diminishing towards zero indicate stationarity.
+
+Horizontal lines denote confidence intervals; bars exceeding these lines are statistically significant. At lag 0, autocorrelation is always 1, as it measures the series with itself.
+
+For the ACF:
+   1. Significant correlations are present at initial lags.
+   2. A exponential function decay suggests quick diminishing influence of past values, typical of ARMA models' MA component.
+
+For the PACF:
+  1. Partial auto correlations within confidence intervals indicate no significant partial autocorrelation.
+  2. Coefficients drop off after a first lag, reflecting the AR components.
+
+### 4 .Fit an ARMA(2,1) model to the simulated data. Summarize the model and interpret the key output components, including parameter estimates and their significance, standard error, and model fit statistics
+```{r}
+# Fit ARMA(2,1) model
+x_fit <- arima(x_ts, order = c(2, 0, 1))
+
+# Summarize the model
+summary(x_fit)
+
+
+```
+
+For the model coefficients the following are some of the insights gotten:
+     1. AR1 is 0.2354 which shows weak positive relationship with one lag back; large standard error (0.2390) indicates low precision.
+     2. AR2 is 0.5600 which shows a strong positive relationship with two lags back; smaller standard error (0.2153) suggests more precision.
+     3. MA1, 0.6965, shows a strong positive relationship with lagged forecast errors; relatively small standard error (0.2239) indicates precision.
+     4.Intercept ,-0.0162, is slightly negative mean and the  standard error  that is 0.3592 for the intercept  shows some variability since it is greater than the coefficient estimate of the intercept.
+
+For the model fit we have the following insights:
+     1. The residual autocorrelation is minimal -0.0251, indicating a good fit.
+     2. The MAPE is high 236.37 , suggesting outliers affecting accuracy.
+
+Overall the ARIMA model captures key dynamics of the time series well, but high MAPE suggests some prediction errors could be affecting overall performance.
+
+
+### 5. Perform the diagnostic checks on the fitted ARMA model, including residual analysis and autocorrelation checks
+```{r}
+# Diagnostic checks
+tsdiag(x_fit)
+
+# Residual analysis
+residuals <- residuals(x_fit)
+
+# Plot residuals
+plot(residuals, main="Residuals", ylab="Residuals", xlab="Time")
+
+# ACF of residuals
+acf(residuals, main="ACF of Residuals")
+
+# Perform Ljung-Box test for autocorrelation
+Box.test(residuals, type = "Ljung-Box")
+```
+
+The residuals fluctuate around zero, indicating that they are randomly distributed. This suggests that the model assumptions are likely met.
+
+The autocorrelation function (ACF) of the residuals shows values close to zero, indicating little to no autocorrelation. This suggests that the model has captured the series' autocorrelation structure effectively. The absence of significant spikes in the ACF indicates that the residuals are likely white noise, meaning the model has appropriately accounted for the autocorrelations in the data.
+
+The Ljung-Box test evaluates whether there are significant autocorrelations in the residuals. A high p-value (typically greater than 0.05) suggests that there are no significant autocorrelations, indicating that the residuals are consistent with white noise.
+
+In our case, the high p-value (0.5739) suggests that there are no significant autocorrelations in the residuals. Thus, we do not reject the null hypothesis of independence, meaning the residuals are independent, and the model is well-specified.
+
+Overall, the residuals appear random and lack significant autocorrelation, indicating a good fit for the ARMA model.
+
+### 6. Using the fitted ARMA model, forecast the next 20 data points. Plot the forecasted values along with their confidence intervals.
+```{r}
+# Forecast 
+x_forecast <- forecast(x_fit, h = 20)
+x_forecast
+
+# Plot the forecasted values
+plot(x_forecast, main = "Forecast for next 20 data points", xlab = "Time", ylab = "Value")
+
+```
+The forecast plot visualizes the expected future values along with the associated uncertainty. The following are the insights form the plot :
+    1. Central Line represents the forecasted values for the next 20 time points.
+    
+    2. Lighter Shade in the Center indicates the central estimate of the forecast.
+    
+    3. Darker Shades on Both Sides show the range of uncertainty around the central estimate, representing the possible variations in the forecasted values.
+
+### 7. Discuss the reliability of these forecasts based on the model diagnostics.
+
+To assess the reliability of the forecasts from the ARMA(2,1) model, we consider several diagnostic checks:
+   1. The residuals fluctuate around zero, indicating that they are randomly distributed. This suggests that the model assumptions are likely met.
+   
+   2. The autocorrelation function (ACF) of the residuals shows values close to zero, indicating minimal to no autocorrelation. This suggests that the ARMA model has successfully accounted for the autocorrelation present in the data. The lack of significant spikes in the ACF reinforces that the residuals are close to white noise.
+   
+   3. The Ljung-Box test for autocorrelation in the residuals yields a high p-value (0.5739). This high p-value suggests that there are no significant auto correlations in the residuals, meaning the residuals are consistent with white noise. Therefore, we do not reject the null hypothesis of residual independence, which supports the adequacy of the model.
+   
+   4.The minimal residual autocorrelation and the high p-value from the Ljung-Box test indicate that the ARMA(2,1) model fits the data well.
+   
+   5. The accuracy of these forecasts is influenced by the model's fit and the residuals' behavior. Given that the model diagnostics are favorable, the forecasts should be reasonably reliable. However, high MAPE observed in the model fit suggests some prediction errors, which could impact forecast accuracy.
+   
+Overall, the favorable diagnostic checks random residuals, minimal autocorrelation, and a high p-value in the Ljung-Box test indicate that the ARMA(2,1) model is a good fit for the data. Consequently, the forecasts generated by this model are likely to be reliable, although it is important to consider potential forecast uncertainty as seen in the forecast plot.
+
+## QUESTION 2
+You have another time series that appears to be non-stationary. Your task is to model this series using an ARIMA model to account for its integrated nature.
+
+Packages: forecast and tseries
+
+### 1. Simulate a time series dataset of length 500 from an ARIMA(1,1,1) model with AR parameters 0.65, and an MA parameter 0.4. Ensure you set a seed for reproducibility
+
+```{r}
+# Load necessary libraries
+library(forecast)
+library(tseries)
+
+# Set seed for reproducibility
+set.seed(324)
+
+# Simulate the time series data
+series <- arima.sim(list(order = c(1, 1, 1), ar = 0.65, ma = 0.4), n = 500)
+
+# Covery data to time series
+series_ts <-ts(series)
+
+# View a portion of the data 
+head(series_ts)
+
+```
+
+The above output means that data points displayed after generating the 500 time series data points is the first 6 points only, hence end = 6.  the frequency shows how the data points are equally spaced, with one observation per time unit.
+
+### 2. Plot the simulated time series data and describe any patterns or characteristics you observe
+
+```{r}
+# Plot the simulated time series data
+plot.ts(series_ts, main="ARIMA(1,1,1)", ylab="Value", xlab="Time")
+
+# To determine stationaryity or not
+adf.test(series_ts)
+```
+
+The simulated time series data appears to be non-stationary with clear seasonality variations, that is after every 100 time point the values either start to decrease then increase simultaneously.  
+
+To confirm if data is stationary we used the Dickey-Fuller test (ADF test). Here the P-value is 0.2977 greater than 0.05 so we have to accept the null hypothesis. So we can conclude that the series is non-stationary.
+
+### 3. Plot the ACF and PACF of the differenced simulated ARIMA data. Interpret the plots
+```{r}
+# Differencing the simulated time series data
+diff_series <- diff(series_ts)
+
+# Plot acf
+acf(diff_series,main="ACF of ARIMA(1,1,1)")
+
+# Plot PACF
+pacf(diff_series,main="PACF of ARIMA(1,1,1)")
+
+# To determine stationaryity or not
+adf.test(diff_series)
+```
+The ACF measures the correlation between a time series and its lagged values.The ACF plot is exhibiting a sine function in which  the lag increases, the correlation decreases.
+
+The integrated order is 1  since the data is differences once to make it stationary and we later used the the Dickey-Fuller test (ADF test) to confirm if data is stationary we used. Here the P-value is 0.01 so we reject the null hypothesis. So we can conclude that the series is stationary
+
+For the PACF plot, the partial auto correlations within confidence intervals indicate no significant partial autocorrelation and the Coefficients drop off after a few lags, reflecting the AR components. 
+
+### 4. Fit an ARMA(1,1,1) model to the simulated data. Summarize the model and interpret the key output components, including parameter estimates and their significance, standard error, and model fit statistics
+```{r}
+# Fit ARIMA(1,1,1) model
+series_fit<- auto.arima(series_ts)
+
+# Summarize the model
+summary(series_fit)
+
+
+```
+We used the auto.arima function to search for a range of p, q values, after fixing d by Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test. This function chooses the model having lowest AIC score.
+
+For the model coefficient we have the following insights :
+   1. The AR1 (0.6708) coefficient indicates a strong positive relationship with one lag back in the time series. The relatively small standard error (0.0396) suggests a precise estimate.
+   
+   2. The MA1 (0.3307) coefficient reflects a moderate positive relationship with lagged forecast errors. The standard error (0.0484) is also relatively small, indicating a precise estimate.
+   
+For the training set we have the following insights :
+   1. The value of the mean error (-0.00091) is close to zero, indicating that the model's predictions are unbiased on average.
+   
+   2. The mean absolute scaled error (0.586) measure compares the model's accuracy to a naive forecasting method. The value is  less than 1 suggesting better performance than the naive model.
+   
+   3. The ACF1 (0.011) is the autocorrelation of the residuals at lag 1 is very close to zero, indicating minimal autocorrelation and a good fit.
+   
+The ARIMA(1,1,1) model demonstrates a good fit with minimal residual autocorrelation, and precise coefficient estimates. However, the MAPE of 12.736% suggests some prediction errors, potentially due to outliers or model limitations.
+   
+### 5. Perform the diagnostic checks on the fitted ARIMA model, including residual analysis and autocorrelation checks
+```{r}
+# Diagnostic plots
+tsdiag(series_fit)
+
+# Perform residual analysis
+residuals <- residuals(series_fit)
+hist(residuals, main = "Histogram of Residuals", xlab = "Residuals")
+
+# Perform Ljung-Box test for autocorrelation
+Box.test(residuals, type = "Ljung-Box")
+
+```
+The residuals fluctuate around zero, indicating that they are randomly distributed. This suggests that the model assumptions are likely met.
+
+The autocorrelation function (ACF) of the residuals shows values very close to zero, indicating little to no autocorrelation. 
+
+This suggests that the model has captured the series' autocorrelation structure effectively. The absence of significant spikes in the ACF indicates that the residuals are likely white noise, meaning the model has appropriately accounted for the auto correlations in the data.
+
+From the p-values for Ljung-Box statistic plot the p-values for the Ljung-Box Q test all are well above 0.05, indicating non-significance.
+
+To verify if our visual interpretation on the p-values for the Ljung-Box is correct we did a test and we found that the high p-value (0.799) suggests that there are no significant auto correlations in the residuals. Thus, we do not reject the null hypothesis of independence, meaning the residuals are independent, and the model is well-specified.
+
+The histogram is used to test for normality in the residuals and it shows that the residual follow a normal distribution
+
+### 6. Using the fitted ARMA model, forecast the next 20 data points. Plot the forecasted values along with their confidence intervals.
+```{r}
+# Forecast the next 20 data points
+series_forecast<- forecast(series_fit, h = 20)
+
+# Plot the forecasted values
+plot(series_forecast, main = "Forecast for the Next 20 Data Points")
+
+
+```
+The forecast plot visualizes the expected future values along with the associated uncertainty. The following are the insights form the plot :
+    1. Central Line represents the forecasted values for the next 20 time points.
+    
+    2. Lighter Shade in the Center indicates the central estimate of the forecast.For our plot the lighter shade is smaller  suggesting that the central forecast values are more precise and less variable
+    
+    3. Darker Shades on Both Sides show the range of uncertainty around the central estimate, representing the possible variations in the forecasted values.For our plot the darker shade is large which  indicates a broad range of uncertainty around the forecasted values.Therefore the model is less certain about future outcomes, possibly due to high variability in the data or limitations in the model's ability to predict future trends.
+
+### 7. Discuss the reliability of these forecasts based on the model diagnostics
+The forecast reliability is assessed based on the model diagnostics and the forecast plot. Here’s a detailed evaluation:
+    1. The residuals of the fitted ARIMA(1,1,1) model fluctuate around zero, indicating they are randomly distributed. This suggests that the model assumptions are likely met and the residuals are not systematically biased.
+    
+    2. The autocorrelation function (ACF) of the residuals is very close to zero, showing minimal to no autocorrelation. This implies that the model has effectively captured the autocorrelation structure of the time series data.
+    
+    3. The high p-value (0.799) from the Ljung-Box test indicates no significant auto correlations in the residuals. Thus, we do not reject the null hypothesis of independence, confirming that the residuals are independent.
+    
+    4. The histogram shows that residuals approximately follow a normal distribution, which is a desirable property for the model's assumptions
+    
+    5. The lighter shade in the forecast plot represents the central estimate of the forecast. In this case, the lighter shade is smaller, suggesting that the central forecast values are more precise and have lower variability.
+    
+    6. The darker shade, which represents the uncertainty range around the forecasted values, is large. This indicates a broad range of potential future values and reflects high uncertainty in the forecasts. The large uncertainty could be due to high variability in the data or limitations in the model’s ability to predict future trends.
+    
+The ARIMA(1,1,1) model appears to be a good fit for the time series data based on diagnostic checks. The model captures the key dynamics and autocorrelation structure effectively. However, the large range of uncertainty in the forecasts suggests that while the central forecast values are relatively precise, there is substantial uncertainty about future values.This uncertainty indicates that predictions should be interpreted  or data might be necessary to improve forecast accuracy and reduce the range of uncertainty.
+    
+

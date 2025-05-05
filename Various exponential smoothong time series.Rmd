@@ -1,0 +1,319 @@
+---
+title: "Untitled"
+author: "NEEMA NDANU"
+date: "2024-05-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load the required packages
+#install.packages("fpp2")
+#Install.packages("tidyverse")
+#install.packages("readxl")
+#install.packages("forecast")
+library(fpp2)
+library(tidyverse)
+library(readxl)
+library(forecast)
+
+# Create a data frame with the given expenditure data
+expenditure <- data.frame(
+  YEAR = c(2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022),
+  EXPENDITURE = c(5.5, 7.2, 8.0, 9.6, 10.2, 11.0, 12.5, 14.0)
+)
+exp_smooth <- function(x, alpha) {
+  s <- numeric(length(x) + 1)
+  for (i in seq_along(s)) {
+    if (i == 1) {
+      s[i] <- x[i]
+    } else {
+      s[i] <- alpha * x[i - 1] + (1 - alpha) * s[i - 1]
+    }
+  }
+  s[-1]
+}
+alpha_values <- c(0.5, 0.7, 0.9)
+filtered_values <- lapply(alpha_values, function(alpha) {
+  exp_smooth(expenditure$EXPENDITURE, alpha)
+})
+forecast_errors <- lapply(filtered_values, function(filtered) {
+  expenditure$EXPENDITURE - filtered
+})
+library(ggplot2)
+
+# Combine original and smoothed data
+smoothed_data <- data.frame(
+  YEAR = expenditure$YEAR,
+  Original = expenditure$EXPENDITURE,
+  `α = 0.5` = filtered_values[[1]],
+  `α = 0.7` = filtered_values[[2]],
+  `α = 0.9` = filtered_values[[3]]
+)
+
+# Melt the data for plotting
+melted_data <- reshape2::melt(smoothed_data, id.vars = "YEAR")
+
+# Create the plot
+ggplot(melted_data, aes(x = YEAR, y = value, color = variable)) +
+  geom_line() +
+  labs(title = "Original vs. Smoothed Expenditure",
+       x = "Year", y = "Expenditure") +
+  theme_minimal()
+
+```
+```{r}
+# Data for annual expenditure
+year <- 2015:2022
+expenditure <- c(5.5, 7.2, 8.0, 9.6, 10.2, 11.0, 12.5, 14.0)
+data <- data.frame(year, expenditure)
+data
+alpha1 <- 0.5
+exp_smooth_0.5 <- numeric(length(expenditure))
+exp_smooth_0.5[1] <- expenditure[1]  # Initializing with the first data point
+
+for (i in 2:length(expenditure)) {
+  exp_smooth_0.5[i] <- alpha1 * expenditure[i] + (1 - alpha1) * exp_smooth_0.5[i - 1]
+}
+
+# Forecast errors
+error_0.5 <- expenditure - exp_smooth_0.5
+data_0.5 <- data.frame(year, expenditure, exp_smooth_0.5, error_0.5)
+data_0.5
+alpha2 <- 0.7
+exp_smooth_0.7 <- numeric(length(expenditure))
+exp_smooth_0.7[1] <- expenditure[1]  # Initializing with the first data point
+
+for (i in 2:length(expenditure)) {
+  exp_smooth_0.7[i] <- alpha2 * expenditure[i] + (1 - alpha2) * exp_smooth_0.7[i - 1]
+}
+
+# Forecast errors
+error_0.7 <- expenditure - exp_smooth_0.7
+data_0.7 <- data.frame(year, expenditure, exp_smooth_0.7, error_0.7)
+data_0.7
+alpha3 <- 0.9
+exp_smooth_0.9 <- numeric(length(expenditure))
+exp_smooth_0.9[1] <- expenditure[1]  # Initializing with the first data point
+
+for (i in 2:length(expenditure)) {
+  exp_smooth_0.9[i] <- alpha3 * expenditure[i] + (1 - alpha3) * exp_smooth_0.9[i - 1]
+}
+
+# Forecast errors
+error_0.9 <- expenditure - exp_smooth_0.9
+data_0.9 <- data.frame(year, expenditure, exp_smooth_0.9, error_0.9)
+data_0.9
+library(ggplot2)
+
+# Plotting original and smoothed values for α = 0.5
+ggplot(data_0.5, aes(x = year)) +
+  geom_line(aes(y = expenditure, color = "Original")) +
+  geom_line(aes(y = exp_smooth_0.5, color = "Smoothed (α = 0.5)")) +
+  labs(title = "Exponential Smoothing with α = 0.5", y = "Expenditure (in millions)") +
+  scale_color_manual(values = c("Original" = "black", "Smoothed (α = 0.5)" = "blue"))
+
+# Plotting original and smoothed values for α = 0.7
+ggplot(data_0.7, aes(x = year)) +
+  geom_line(aes(y = expenditure, color = "Original")) +
+  geom_line(aes(y = exp_smooth_0.7, color = "Smoothed (α = 0.7)")) +
+  labs(title = "Exponential Smoothing with α = 0.7", y = "Expenditure (in millions)") +
+  scale_color_manual(values = c("Original" = "black", "Smoothed (α = 0.7)" = "red"))
+
+# Plotting original and smoothed values for α = 0.9
+ggplot(data_0.9, aes(x = year)) +
+  geom_line(aes(y = expenditure, color = "Original")) +
+  geom_line(aes(y = exp_smooth_0.9, color = "Smoothed (α = 0.9)")) +
+  labs(title = "Exponential Smoothing with α = 0.9", y = "Expenditure (in millions)") +
+  scale_color_manual(values = c("Original" = "black", "Smoothed (α = 0.9)" = "green"))
+
+```
+
+```{r}
+# Data for annual expenditure
+year <- 2015:2022
+expenditure <- c(5.5, 7.2, 8.0, 9.6, 10.2, 11.0, 12.5, 14.0)
+data <- data.frame(year, expenditure)
+data
+
+# Function to apply exponential smoothing
+apply_exponential_smoothing <- function(expenditure, alpha) {
+  smoothed <- numeric(length(expenditure))
+  smoothed[1] <- expenditure[1]  # Initializing with the first data point
+
+  for (i in 2:length(expenditure)) {
+    smoothed[i] <- alpha * expenditure[i] + (1 - alpha) * smoothed[i - 1]
+  }
+
+  error <- expenditure - smoothed
+  return(list(smoothed = smoothed, error = error))
+}
+
+# Apply exponential smoothing for different alphas
+alpha_values <- c(0.5, 0.7, 0.9)
+results <- lapply(alpha_values, function(alpha) apply_exponential_smoothing(expenditure, alpha))
+
+# Combine results into a data frame
+smoothed_0.5 <- results[[1]]$smoothed
+error_0.5 <- results[[1]]$error
+
+smoothed_0.7 <- results[[2]]$smoothed
+error_0.7 <- results[[2]]$error
+
+smoothed_0.9 <- results[[3]]$smoothed
+error_0.9 <- results[[3]]$error
+
+data_combined <- data.frame(year, expenditure, smoothed_0.5, error_0.5, smoothed_0.7, error_0.7, smoothed_0.9, error_0.9)
+data_combined
+
+library(ggplot2)
+
+# Plotting original and smoothed values
+ggplot(data_combined, aes(x = year)) +
+  geom_line(aes(y = expenditure, color = "Original")) +
+  geom_line(aes(y = smoothed_0.5, color = "Smoothed (α = 0.5)")) +
+  geom_line(aes(y = smoothed_0.7, color = "Smoothed (α = 0.7)")) +
+  geom_line(aes(y = smoothed_0.9, color = "Smoothed (α = 0.9)")) +
+  labs(title = "Exponential Smoothing of Expenditure Data", y = "Expenditure (in millions)") +
+  scale_color_manual(values = c("Original" = "black", "Smoothed (α = 0.5)" = "blue", "Smoothed (α = 0.7)" = "red", "Smoothed (α = 0.9)" = "green")) +
+  theme_minimal()
+
+```
+```{r}
+# Data for annual expenditure
+year <- 2015:2022
+expenditure <- c(5.5, 7.2, 8.0, 9.6, 10.2, 11.0, 12.5, 14.0)
+data <- data.frame(year, expenditure)
+data
+# Function to apply exponential smoothing
+apply_exponential_smoothing <- function(expenditure, alpha) {
+  smoothed <- numeric(length(expenditure))
+  smoothed[1] <- expenditure[1]  # Initializing with the first data point
+
+  for (i in 2:length(expenditure)) {
+    smoothed[i] <- alpha * expenditure[i] + (1 - alpha) * smoothed[i - 1]
+  }
+
+  error <- expenditure - smoothed
+  return(list(smoothed = smoothed, error = error))
+}
+
+# Apply exponential smoothing for different alphas
+alpha_values <- c(0.5, 0.7, 0.9)
+results <- lapply(alpha_values, function(alpha) apply_exponential_smoothing(expenditure, alpha))
+
+# Extracting smoothed values and errors
+smoothed_0.5 <- results[[1]]$smoothed
+error_0.5 <- results[[1]]$error
+
+smoothed_0.7 <- results[[2]]$smoothed
+error_0.7 <- results[[2]]$error
+
+smoothed_0.9 <- results[[3]]$smoothed
+error_0.9 <- results[[3]]$error
+
+# Combine results into a data frame
+data_combined <- data.frame(year, expenditure, smoothed_0.5, error_0.5, smoothed_0.7, error_0.7, smoothed_0.9, error_0.9)
+data_combined
+library(ggplot2)
+
+# Plotting original and smoothed values
+ggplot(data_combined, aes(x = year)) +
+  geom_line(aes(y = expenditure, color = "Original")) +
+  geom_line(aes(y = smoothed_0.5, color = "Smoothed (α = 0.5)")) +
+  geom_line(aes(y = smoothed_0.7, color = "Smoothed (α = 0.7)")) +
+  geom_line(aes(y = smoothed_0.9, color = "Smoothed (α = 0.9)")) +
+  labs(title = "Exponential Smoothing of Expenditure Data", y = "Expenditure (in millions)") +
+  scale_color_manual(values = c("Original" = "black", "Smoothed (α = 0.5)" = "blue", "Smoothed (α = 0.7)" = "red", "Smoothed (α = 0.9)" = "green")) +
+  theme_minimal()
+
+```
+```{r}
+# Load required packages
+library(forecast)
+library(ggplot2)
+
+# Data for annual expenditure
+expenditure <- ts(c(5.5, 7.2, 8.0, 9.6, 10.2, 11.0, 12.5, 14.0), start = 2015, frequency = 1)
+
+# Apply simple exponential smoothing (SES) for alpha = 0.5, 0.7, 0.9
+exp_forecast_0.5 <- ses(expenditure, alpha = 0.5)
+exp_forecast_0.7 <- ses(expenditure, alpha = 0.7)
+exp_forecast_0.9 <- ses(expenditure, alpha = 0.9)
+
+# Calculate forecast errors
+calculate_forecast_error <- function(model, actual) {
+  accuracy(fitted(model), actual)
+}
+
+# Forecast errors for each alpha
+error_0.5 <- calculate_forecast_error(exp_forecast_0.5, expenditure)
+error_0.7 <- calculate_forecast_error(exp_forecast_0.7, expenditure)
+error_0.9 <- calculate_forecast_error(exp_forecast_0.9, expenditure)
+
+# Print forecast errors
+print(error_0.5)
+print(error_0.7)
+print(error_0.9)
+
+# Plot the comparison between the original values and all the alphas
+autoplot(expenditure, series = "Original") +
+  autolayer(fitted(exp_forecast_0.5), series = "Alpha 0.5", PI = FALSE) +
+  autolayer(fitted(exp_forecast_0.7), series = "Alpha 0.7", PI = FALSE) +
+  autolayer(fitted(exp_forecast_0.9), series = "Alpha 0.9", PI = FALSE) +
+  ggtitle("Expenditure Time Series with Simple Exponential Smoothing") +
+  xlab("Year") + ylab("Expenditure (in millions)") +
+  scale_color_manual(values = c("Original" = "black", "Alpha 0.5" = "blue", "Alpha 0.7" = "red", "Alpha 0.9" = "green")) +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+```
+```{r}
+# Apply Holt-Winters exponential smoothing with different alphas
+# Alpha = 0.5
+exp_model_0.5 <- HoltWinters(expenditure.ts, alpha = 0.5, beta = FALSE, gamma = FALSE)
+plot(exp_model_0.5, main = "Holt-Winters with alpha = 0.5")
+sse_0.5 <- exp_model_0.5$SSE
+
+# Alpha = 0.7
+exp_model_0.7 <- HoltWinters(expenditure.ts, alpha = 0.7, beta = FALSE, gamma = FALSE)
+plot(exp_model_0.7, main = "Holt-Winters with alpha = 0.7")
+sse_0.7 <- exp_model_0.7$SSE
+
+# Alpha = 0.9
+exp_model_0.9 <- HoltWinters(expenditure.ts, alpha = 0.9, beta = FALSE, gamma = FALSE)
+plot(exp_model_0.9, main = "Holt-Winters with alpha = 0.9")
+sse_0.9 <- exp_model_0.9$SSE
+
+# Extract the fitted values for plotting
+fitted_0.5 <- fitted(exp_model_0.5)[,1]
+fitted_0.7 <- fitted(exp_model_0.7)[,1]
+fitted_0.9 <- fitted(exp_model_0.9)[,1]
+
+# Plot the comparison between the original values and all the alphas
+plot(expenditure.ts, main = "Expenditure Time Series with Holt-Winters", col = "black", ylim = range(c(expenditure.ts, fitted_0.5, fitted_0.7, fitted_0.9)))
+lines(fitted_0.5, col = "blue", lty = 2)
+lines(fitted_0.7, col = "red", lty = 2)
+lines(fitted_0.9, col = "green", lty = 2)
+legend("topright", legend = c("Original", "Alpha 0.5", "Alpha 0.7", "Alpha 0.9"), col = c("black", "blue", "red", "green"), lty = 1:2)
+
+# Calculate forecast errors for each model
+forecast_error <- function(model) {
+  accuracy(fitted(model)[,1], expenditure.ts)
+}
+
+error_0.5 <- forecast_error(exp_model_0.5)
+error_0.7 <- forecast_error(exp_model_0.7)
+error_0.9 <- forecast_error(exp_model_0.9)
+
+# Print SSE and forecast errors
+sse_0.5
+sse_0.7
+sse_0.9
+error_0.5
+error_0.7
+error_0.9
+```
